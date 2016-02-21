@@ -1,5 +1,10 @@
 module Lambda.Named(NamedTerm, to_named, from_named) where
 
+import Data.List(elemIndex)
+import Data.Maybe(fromJust)
+
+import Lambda.Syntax
+
 data NamedTerm = NamedTermVar String
                | NamedTermLambda String NamedTerm
                | NamedTermApply NamedTerm NamedTerm
