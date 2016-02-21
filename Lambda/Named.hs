@@ -1,4 +1,4 @@
-module Lambda.Named(NamedTerm, to_named, from_named) where
+module Lambda.Named(NamedTerm(..), to_named, from_named) where
 
 import Data.List(elemIndex)
 import Data.Maybe(fromJust)
@@ -8,7 +8,7 @@ import Lambda.Syntax
 data NamedTerm = NamedTermVar String
                | NamedTermLambda String NamedTerm
                | NamedTermApply NamedTerm NamedTerm
-  deriving (Eq, Show)
+  deriving (Eq)
 
 to_named fv_names bv_names t =
   to_named' 0 t
