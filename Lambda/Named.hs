@@ -63,14 +63,14 @@ from_named t =
       (x : bvars, fvars) <- get
       put (bvars, fvars)
     v_idx x = do
-      (bvars, _) <- get
-      case elemIndex x bvars of
+      (bvar_names, _) <- get
+      case elemIndex x bvar_names of
         Just k -> return k
         Nothing -> do
-          (bvars, fvars) <- get
-          case elemIndex x fvars of
-            Just k -> return $ (length bvars) + k
+          (bvar_names, fvar_names) <- get
+          case elemIndex x fvar_names of
+            Just k -> return $ (length bvar_names) + k
             Nothing -> do
-             let fvars' = fvars ++ [x]
-             put (bvars, fvars')
-             return $ (length bvars) + (length fvars') - 1 
+             let fvar_names' = fvar_names ++ [x]
+             put (bvar_names, fvar_names')
+             return $ (length bvar_names) + (length fvar_names') - 1 
