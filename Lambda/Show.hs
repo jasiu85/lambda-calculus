@@ -1,4 +1,4 @@
-module Lambda.Show(DeBruijn(..)) where
+module Lambda.Show(NamedTerm(..), DeBruijnTerm(..)) where
 
 import Control.Monad.Identity
 import Control.Monad.Reader
@@ -6,44 +6,37 @@ import Control.Monad.Writer
  
 import Lambda.Syntax
 
-newtype DeBruijn = DeBruijn Term
+newtype NamedTerm = NamedTerm Term
 
-instance Show DeBruijn where
-  showsPrec _ (DeBruijn t) = runIdentity $ execWriterT $ show' t where
-    show' (TermVar vn) = show_var vn
-    show' (TermLambda x t) = do
-      tell $ showString "\\"
-      tell $ showString x
-      tell $ showString "."
-      tell $ showString "("
-      show' t
-      tell $ showString ")"
-    show' (TermApply tf tx) = do
-      tell $ showString "("
-      show' tf
-      tell $ showString " "
-      show' tx
-      tell $ showString ")"
-    show_var (VarFree s) = tell $ showString s
-    show_var (VarBound k) = tell $ shows k 
+newtype DeBruijnTerm = DeBruijnTerm Term
 
-instance Show Term where
-  showsPrec _ t = runIdentity $ execWriterT $ (`runReaderT `[]) $ show' t where
-    show' (TermVar vn) = show_var vn
-    show' (TermLambda x t) = do
-      tell $ showString "\\"
-      tell $ showString x
-      tell $ showString "."
-      tell $ showString "("
-      local (x:) (show' t)
-      tell $ showString ")"
-    show' (TermApply tf tx) = do
-      tell $ showString "("
-      show' tf
-      tell $ showString " "
-      show' tx
-      tell $ showString ")"
-    show_var (VarFree s) = tell $ showString s
-    show_var (VarBound k) = do
-      binders <- ask
-      tell $ showString (binders !! k)
+instance Show NamedTerm where
+  showsPrec _ (NamedTerm t) = showTerm showVarNamed t
+
+instance Show DeBruijnTerm where
+  showsPrec _ (DeBruijnTerm t) = showTerm showVarDeBruijn t
+
+showTerm showVar =
+  runIdentity . execWriterT . (`runReaderT` []) . showTerm'
+  where
+  showTerm' (TermVar vn) = showVar vn
+  showTerm' (TermLambda x t) = do
+    tell $ showString "\\"
+    tell $ showString x
+    tell $ showString "."
+    local (x:) $ showTerm' t
+  showTerm' (TermApply tf tx) = do
+    tell $ showString "("
+    showTerm' tf
+    tell $ showString " "
+    showTerm' tx
+    tell $ showString ")"
+
+showVarNamed (VarFree s) = tell $ showString s
+showVarNamed (VarBound k) = do
+  binders <- ask
+  tell $ showString (binders !! k)
+
+showVarDeBruijn (VarFree s) = tell $ showString s
+showVarDeBruijn (VarBound k) = tell $ shows k
+
