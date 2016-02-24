@@ -1,6 +1,10 @@
-module Lambda.Syntax (Term(..)) where
+module Lambda.Syntax (VarName(..), Term(..)) where
 
-data Term = TermVar Int
-          | TermLambda Term
+data VarName = VarFree String
+             | VarBound Int
+  deriving (Eq)
+
+data Term = TermVar VarName
+          | TermLambda String Term
           | TermApply Term Term
-    deriving (Eq)
+  deriving (Eq)
