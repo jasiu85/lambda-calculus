@@ -1,4 +1,4 @@
-module Lambda.Manipulators(bind_params) where
+module Lambda.Manipulators(bind_params, reduce) where
 
 import Control.Monad.Reader
 import Data.List(elemIndex)
@@ -26,3 +26,28 @@ bind_params t =
         Nothing -> return $ VarFree s
     bind_var (VarBound k) = do
       return $ VarBound k
+
+shift c d t@(TermVar (VarFree s)) = t
+shift c d t@(TermVar (VarBound k)) =
+  if k < c
+  then t
+  else TermVar $ VarBound $ k + d
+shift c d (TermLambda x t) = TermLambda x t' where
+  t' = shift (c + 1) d t
+shift c d (TermApply tf tx) = TermApply tf' tx' where
+  tf' = shift c d tf
+  tx' = shift c d tx
+
+substitute i u t@(TermVar (VarFree s)) = t
+substitute i u t@(TermVar (VarBound k)) = if i == k then u else t
+substitute i u (TermLambda x t) = TermLambda x t' where
+  t' = substitute (i + 1) u' t
+  u' = shift 0 1 u
+substitute i u (TermApply tf tx) = TermApply tf' tx' where
+  tf' = substitute i u tf
+  tx' = substitute i u tx
+
+reduce (TermApply (TermLambda x tf) tx) = tf'' where
+  tx' = shift 0 1 tx
+  tf' = substitute 0 tx' tf
+  tf'' = shift 0 (-1) tf'

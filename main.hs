@@ -1,11 +1,13 @@
 import Lambda.Syntax
+import Lambda.Manipulators
 import Lambda.Show
 import Lambda.Read
 
 main = do
   putStrLn "Enter term:"
   term_str <- getLine
-  let term = read term_str
+  let term' = read term_str
+  let term = reduce term'
   putStrLn ("Named    : " ++ (show $ NamedTerm term))
   putStrLn ("de Bruijn: " ++ (show $ DeBruijnTerm term))
 {-
