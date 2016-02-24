@@ -3,10 +3,11 @@ module Lambda.Read() where
 import Control.Applicative
 import Data.Char(isAlpha)
 
-import Lambda.Named
+import Lambda.Syntax
+import Lambda.Manipulators(bind_params)
 
-instance Read NamedTerm where
-  readsPrec _ = runParser term
+instance Read Term where
+  readsPrec _ = runParser (bind_params <$> term)
 
 data Parser a = Parser { runParser :: String -> [(a, String)] }
 
@@ -36,19 +37,24 @@ char_satisfying p = Parser $ \s ->
 
 char c = char_satisfying (c ==)
 
-var = (:[]) <$> char_satisfying isAlpha
+var = to_string <$> char_satisfying isAlpha where
+  to_string c = [c]
 
 with_parens p = char '(' *> p <* char ')'
 
-some_separated_by px ps = (:) <$> px <*> (many $ ps *> px)
+at_least 0 p = many p
+at_least 1 p = some p
+at_least n p = (:) <$> p <*> (at_least (n - 1) p) 
+
+at_least_separated_by n px ps = (:) <$> px <*> (at_least (n-1)  $ ps *> px)
+
+separated_by = at_least_separated_by 1
 
 term = term_var <|> term_lambda <|> term_apply <|> (with_parens term)
 
-term_var = NamedTermVar <$> var
+term_var = (TermVar . VarFree) <$> var
 
-term_lambda = (flip $ foldr NamedTermLambda) <$> ((char '\\') *> (var `some_separated_by` (char ' ')) <* (char '.')) <*> term
+term_lambda = (flip $ foldr TermLambda) <$> ((char '\\') *> (var `separated_by` (char ' ')) <* (char '.')) <*> term
 
-term_apply =
-  with_parens term_apply'
-  where
-    term_apply' = (foldl1 NamedTermApply) <$> (term `some_separated_by` (char ' '))
+term_apply = with_parens term_apply' where
+  term_apply' = (foldl1 TermApply) <$> (at_least_separated_by 2 term (char ' '))
