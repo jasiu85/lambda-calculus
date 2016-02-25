@@ -1,4 +1,4 @@
-module Lambda.Show(NamedTerm(..), DeBruijnTerm(..)) where
+module Lambda.Show(NamedTerm(..), DeBruijnTerm(..), AstTerm(..)) where
 
 import Control.Monad.Identity
 import Control.Monad.Reader
@@ -10,11 +10,40 @@ newtype NamedTerm = NamedTerm Term
 
 newtype DeBruijnTerm = DeBruijnTerm Term
 
+newtype AstTerm = AstTerm Term
+
 instance Show NamedTerm where
   showsPrec _ (NamedTerm t) = showTerm showVarNamed t
 
 instance Show DeBruijnTerm where
   showsPrec _ (DeBruijnTerm t) = showTerm showVarDeBruijn t
+
+instance Show AstTerm where
+  showsPrec _ (AstTerm t) = execWriter $ showAstTerm t where
+    showAstTerm (TermVar vn) = do
+      tell $ showString "(TermVar "
+      showAstVar vn
+      tell $ showString ")"
+    showAstTerm (TermLambda x t) = do
+      tell $ showString "(TermLambda "
+      tell $ showString x
+      tell $ showString " "
+      showAstTerm t
+      tell $ showString ")"
+    showAstTerm (TermApply tf tx) = do
+      tell $ showString "(TermApply "
+      showAstTerm tf
+      tell $ showString " "
+      showAstTerm tx
+      tell $ showString ")"
+    showAstVar (VarFree s) = do
+      tell $ showString "(VarFree "
+      tell $ showString s
+      tell $ showString ")"
+    showAstVar (VarBound k) = do
+      tell $ showString "(VarBound "
+      tell $ shows k
+      tell $ showString ")"
 
 showTerm showVar =
   runIdentity . execWriterT . (`runReaderT` []) . showTerm'
