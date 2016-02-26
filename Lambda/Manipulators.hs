@@ -47,7 +47,7 @@ substitute i u (TermApply tf tx) = TermApply tf' tx' where
   tf' = substitute i u tf
   tx' = substitute i u tx
 
-reduce (TermApply (TermLambda x tf) tx) = tf'' where
-  tx' = shift 0 1 tx
-  tf' = substitute 0 tx' tf
-  tf'' = shift 0 (-1) tf'
+reduce x body arg = body'' where
+  arg' = shift 0 1 arg
+  body' = substitute 0 arg' body
+  body'' = shift 0 (-1) body'
