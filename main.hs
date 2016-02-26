@@ -1,18 +1,17 @@
+import Control.Applicative
+
 import Lambda.Syntax
 import Lambda.Manipulators
 import Lambda.Show
 import Lambda.Read
+import Lambda.Eval
 
 main = do
   putStrLn "Enter term:"
   term_str <- getLine
-  let term' = read term_str
-  let term = reduce term'
-  putStrLn ("Named    : " ++ (show $ NamedTerm term))
-  putStrLn ("de Bruijn: " ++ (show $ DeBruijnTerm term))
-{-
-  putStrLn ("Unnamed:   " ++ (show unnamed_term))
-  putStrLn ("Renamed:   " ++ (show renamed_term))
-  putStrLn ("Rank:      " ++ (show (rank unnamed_term)))
-  putStrLn ("Free vars: " ++ (show (free_vars unnamed_term)))
--}
+  let term = read term_str
+  putStrLn ("Named:       " ++ (show $ NamedTerm term))
+  putStrLn ("de Bruijn:   " ++ (show $ DeBruijnTerm term))
+  putStrLn ("AST:         " ++ (show $ AstTerm term))
+  putStrLn ("CallByName:  " ++ (show $ NamedTerm $ evalCallByName term))
+  putStrLn ("CallByValue: " ++ (show $ NamedTerm $ evalCallByValue term))
