@@ -42,19 +42,33 @@ var = to_string <$> char_satisfying isAlpha where
 
 with_parens p = char '(' *> p <* char ')'
 
-at_least 0 p = many p
-at_least 1 p = some p
-at_least n p = (:) <$> p <*> (at_least (n - 1) p) 
+separatedByLeft elemParser sepParser =
+  combineAll <$> elemParser <*> (many $ (,) <$> sepParser <*> elemParser) where
+    combineAll elem rest = foldl combineTwo elem rest
+    combineTwo elemL (sepFun, elemR) = sepFun elemL elemR
 
-at_least_separated_by n px ps = (:) <$> px <*> (at_least (n-1)  $ ps *> px)
+separatedByRight elemParser sepParser =
+  combineAll <$> elemParser <*> (many $ (,) <$> sepParser <*> elemParser) where
+    combineAll elem rest = (foldr combineTwo id rest) elem
+    combineTwo (sepFun, elemL) funR = \elem -> sepFun elem (funR elemL)
 
-separated_by = at_least_separated_by 1
+term =
+  (termFun $ termApply $ termHighestPrec) <|>
+  (termApply $ termHighestPrec) <|>
+  (termHighestPrec)
 
-term = term_var <|> term_lambda <|> term_apply <|> (with_parens term)
+termFun higherPrecParser =
+  ((char '\\') *> argList <* (char '.')) <*> higherPrecParser where
+    argList = (buildFun <$> var) `separatedByRight` (const buildNestedFuns <$> char ' ')
+    buildFun var = \body -> TermLambda var body
+    buildNestedFuns funL funR = \body -> funL (funR body)
 
-term_var = (TermVar . VarFree) <$> var
+termApply higherPrecParser =
+  higherPrecParser `separatedByLeft` ((const buildApply) <$> char ' ') where
+    buildApply = TermApply
 
-term_lambda = (flip $ foldr TermLambda) <$> ((char '\\') *> (var `separated_by` (char ' ')) <* (char '.')) <*> term
+termHighestPrec = termVar <|> termParens
 
-term_apply = with_parens term_apply' where
-  term_apply' = (foldl1 TermApply) <$> (at_least_separated_by 2 term (char ' '))
+termVar = (TermVar . VarFree) <$> var
+
+termParens = with_parens term
