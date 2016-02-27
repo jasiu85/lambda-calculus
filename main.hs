@@ -1,4 +1,6 @@
-import Control.Applicative
+import Control.Monad.Identity
+import Control.Monad.Reader
+import Control.Monad.Writer
 
 import Lambda.Syntax
 import Lambda.Manipulators
@@ -10,8 +12,7 @@ main = do
   putStrLn "Enter term:"
   term_str <- getLine
   let term = read term_str
-  putStrLn ("Named:       " ++ (show $ NamedTerm term))
-  putStrLn ("de Bruijn:   " ++ (show $ DeBruijnTerm term))
-  putStrLn ("AST:         " ++ (show $ AstTerm term))
-  putStrLn ("CallByName:  " ++ (show $ NamedTerm $ evalCallByName term))
-  putStrLn ("CallByValue: " ++ (show $ NamedTerm $ evalCallByValue term))
+  putStrLn (show $ NamedTerm term)
+  let reductions = snd $ runIdentity $ runWriterT $ (`runReaderT` id) $ (evalCallByValue term)
+  mapM_ (putStrLn . show .NamedTerm) reductions
+--  putStrLn ("CallByValue: " ++ (show $ NamedTerm $ evalCallByValue term))
