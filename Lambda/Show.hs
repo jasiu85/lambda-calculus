@@ -48,12 +48,27 @@ instance Show AstTerm where
 showTerm showVar =
   runIdentity . execWriterT . (`runReaderT` []) . showTerm'
   where
-  showTerm' (TermVar vn) = showVar vn
+  showTerm' (TermVar vn) = do
+    showVar vn
+  showTerm' (TermConst val) = do
+    tell $ shows val
   showTerm' (TermLambda x t) = do
     tell $ showString "\\"
     tell $ showString x
     tell $ showString "."
     local (x:) $ showTerm' t
+  showTerm' (TermAdd l r) = do
+    tell $ showString "("
+    showTerm' l
+    tell $ showString " + "
+    showTerm' r
+    tell $ showString ")"
+  showTerm' (TermMul l r) = do
+    tell $ showString "("
+    showTerm' l
+    tell $ showString " * "
+    showTerm' r
+    tell $ showString ")"
   showTerm' (TermApply tf tx) = do
     tell $ showString "("
     showTerm' tf

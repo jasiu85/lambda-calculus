@@ -1,7 +1,7 @@
 module Lambda.Read() where
 
 import Control.Applicative
-import Data.Char(isAlpha)
+import Data.Char(isAlpha, isDigit, ord)
 
 import Lambda.Syntax
 import Lambda.Manipulators(bind_params)
@@ -40,6 +40,9 @@ char c = char_satisfying (c ==)
 var = to_string <$> char_satisfying isAlpha where
   to_string c = [c]
 
+constInt = to_int <$> char_satisfying isDigit where
+  to_int c = (ord c) - (ord '0')
+
 with_parens p = char '(' *> p <* char ')'
 
 separatedByLeft elemParser sepParser =
@@ -52,23 +55,30 @@ separatedByRight elemParser sepParser =
     combineAll elem rest = (foldr combineTwo id rest) elem
     combineTwo (sepFun, elemL) funR = \elem -> sepFun elem (funR elemL)
 
-term =
-  (termFun $ termApply $ termHighestPrec) <|>
-  (termApply $ termHighestPrec) <|>
-  (termHighestPrec)
+term = termFun $ termAdd $ termMul $ termApply $ termHighestPrec
 
-termFun higherPrecParser =
-  ((char '\\') *> argList <* (char '.')) <*> higherPrecParser where
+termFun higherPrecParser = higherPrecParser <|> funParser where
+  funParser = ((char '\\') *> argList <* (char '.')) <*> higherPrecParser where
     argList = (buildFun <$> var) `separatedByRight` (const buildNestedFuns <$> char ' ')
     buildFun var = \body -> TermLambda var body
     buildNestedFuns funL funR = \body -> funL (funR body)
 
-termApply higherPrecParser =
-  higherPrecParser `separatedByLeft` ((const buildApply) <$> char ' ') where
-    buildApply = TermApply
+termAdd higherPrecParser =
+  higherPrecParser `separatedByLeft` opParser where
+    opParser = (const TermAdd) <$> (char ' ' *> char '+' <* char ' ')
 
-termHighestPrec = termVar <|> termParens
+termMul higherPrecParser =
+  higherPrecParser `separatedByLeft` opParser where
+    opParser = (const TermMul) <$> (char ' ' *> char '*' <* char ' ')
+
+termApply higherPrecParser =
+  higherPrecParser `separatedByLeft` opParser where
+    opParser = (const TermApply) <$> char ' '
+
+termHighestPrec = termVar <|> termConst <|> termParens
 
 termVar = (TermVar . VarFree) <$> var
+
+termConst = TermConst <$> constInt
 
 termParens = with_parens term
