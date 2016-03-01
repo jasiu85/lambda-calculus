@@ -34,5 +34,25 @@ evalCallByValue term = case term of
         evalCallByValue reduced
       otherwise -> do
         return $ TermApply fun' arg'
+  TermMul left right -> do
+    left' <- local (. \l -> TermMul l right) (evalCallByValue left)
+    right' <- local (. \r -> TermMul left' r) (evalCallByValue right)
+    case (left', right') of
+      (TermConst vl, TermConst vr) -> do
+        let reduced = TermConst (vl * vr)
+        report reduced
+        return reduced
+      otherwise -> do
+        return $ TermMul left' right'
+  TermAdd left right -> do
+    left' <- local (. \l -> TermAdd l right) (evalCallByValue left)
+    right' <- local (. \r -> TermAdd left' r) (evalCallByValue right)
+    case (left', right') of
+      (TermConst vl, TermConst vr) -> do
+        let reduced = TermConst (vl + vr)
+        report reduced
+        return reduced
+      otherwise -> do
+        return $ TermAdd left' right'
   otherwise -> do
     return $ term
