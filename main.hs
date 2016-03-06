@@ -11,8 +11,7 @@ import Lambda.Eval
 main = do
   putStrLn "Enter term:"
   term_str <- getLine
-  let term = read term_str
-  putStrLn (show $ NamedTerm term)
-  let reductions = snd $ runIdentity $ runWriterT $ (`runReaderT` id) $ (evalCallByValue term)
-  mapM_ (putStrLn . show .NamedTerm) reductions
---  putStrLn ("CallByValue: " ++ (show $ NamedTerm $ evalCallByValue term))
+  let inputTerm = read term_str
+  putStrLn (show $ NamedTerm inputTerm)
+  let resultTerm = evalCallByName inputTerm
+  putStrLn (show $ NamedTerm resultTerm)
