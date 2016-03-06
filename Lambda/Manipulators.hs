@@ -1,9 +1,45 @@
-module Lambda.Manipulators(bind_params, reduce) where
+{-# LANGUAGE RankNTypes #-}
 
+module Lambda.Manipulators where
+
+import Control.Applicative
+import Control.Monad.Identity
 import Control.Monad.Reader
+import Data.Functor
 import Data.List(elemIndex)
 
 import Lambda.Syntax
+
+type TermLens = forall f. Functor f => (Term -> f Term) -> (Term -> f Term)
+
+lensGet :: TermLens -> Term -> Term
+lensGet lens fullTerm =
+  getConst $ lens Const fullTerm
+
+lensSet :: TermLens -> Term -> Term -> Term
+lensSet lens subTerm fullTerm =
+  runIdentity $ lens (const $ Identity subTerm) fullTerm
+
+lensTermApplyFun f (TermApply fun arg) =
+  (\fun' -> TermApply fun' arg) <$> (f fun)
+
+lensTermApplyArg f (TermApply fun arg) =
+  (\arg' -> TermApply fun arg') <$> (f arg)
+
+lensTermMulLeft f (TermMul left right) =
+  (\left' -> TermMul left' right) <$> (f left)
+
+lensTermMulRight f (TermMul left right) =
+  (\right' -> TermMul left right') <$> (f right)
+
+lensTermAddLeft f (TermAdd left right) =
+  (\left' -> TermAdd left' right) <$> (f left)
+
+lensTermAddRight f (TermAdd left right) =
+  (\right' -> TermAdd left right') <$> (f right)
+
+lensTermFunBody f (TermLambda var body) =
+  (\body' -> TermLambda var body') <$> (f body)
 
 bind_params t =
   runReader (bind_params' t) []
