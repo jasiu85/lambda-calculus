@@ -71,7 +71,7 @@ substitute i u (TermApply tf tx) = TermApply tf' tx' where
   tf' = substitute i u tf
   tx' = substitute i u tx
 
-reduce x body arg = body'' where
+betaReduce body arg = body'' where
   arg' = shift 0 1 arg
   body' = substitute 0 arg' body
   body'' = shift 0 (-1) body'
