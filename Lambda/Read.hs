@@ -4,7 +4,7 @@ import Control.Applicative
 import Data.Char(isAlpha, isDigit, ord)
 
 import Lambda.Syntax
-import Lambda.Manipulators(bind_params)
+import Lambda.Manipulators
 
 instance Read Term where
   readsPrec _ = runParser (bind_params <$> term)
