@@ -1,3 +1,4 @@
+{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE RankNTypes #-}
 
 module Lambda.Manipulators where
@@ -25,6 +26,12 @@ lensTermApplyFun =
 
 lensTermApplyArg =
   TermLens $ \f (TermApply fun arg) -> (\arg' -> TermApply fun arg') <$> (f arg)
+
+lensTermPowLeft =
+  TermLens $ \f (TermPow left right) -> (\left' -> TermPow left' right) <$> (f left)
+
+lensTermPowRight =
+  TermLens $ \f (TermPow left right) -> (\right' -> TermPow left right') <$> (f right)
 
 lensTermMulLeft =
   TermLens $ \f (TermMul left right) -> (\left' -> TermMul left' right) <$> (f left)

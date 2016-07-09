@@ -1,3 +1,5 @@
+{-# LANGUAGE FlexibleContexts #-}
+
 module Lambda.Eval where
 
 import Control.Monad.Reader
@@ -18,10 +20,13 @@ reportSingleStep newPartialTerm = do
 evalSingleStep term = reportSingleStep $ step term where
   step (TermApply (TermLambda _ body) arg) =
     betaReduce body arg
+  step (TermPow (TermConst left) (TermConst right)) =
+    TermConst (left ^ right)
   step (TermMul (TermConst left) (TermConst right)) =
     TermConst (left * right)
   step (TermAdd (TermConst left) (TermConst right)) =
     TermConst (left + right)
+  step t = t
 
 evalCallByValue term = eval term where
   eval (TermApply fun arg) = do
@@ -29,6 +34,10 @@ evalCallByValue term = eval term where
     arg' <- local (`lensCompose` lensTermApplyArg) (eval arg)
     term' <- evalSingleStep $ TermApply fun' arg'
     eval term'
+  eval (TermPow left right) = do
+    left' <- local (`lensCompose` lensTermPowLeft) (eval left)
+    right' <- local (`lensCompose` lensTermPowRight) (eval right)
+    evalSingleStep $ TermPow left' right'
   eval (TermMul left right) = do
     left' <- local (`lensCompose` lensTermMulLeft) (eval left)
     right' <- local (`lensCompose` lensTermMulRight) (eval right)
@@ -45,6 +54,10 @@ evalCallByName term = eval term where
     fun' <- local (`lensCompose` lensTermApplyFun) (eval fun)
     term' <- evalSingleStep $ TermApply fun' arg
     eval term'
+  eval (TermPow left right) = do
+    left' <- local (`lensCompose` lensTermPowLeft) (eval left)
+    right' <- local (`lensCompose` lensTermPowRight) (eval right)
+    evalSingleStep $ TermPow left' right'
   eval (TermMul left right) = do
     left' <- local (`lensCompose` lensTermMulLeft) (eval left)
     right' <- local (`lensCompose` lensTermMulRight) (eval right)

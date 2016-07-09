@@ -1,3 +1,5 @@
+{-# LANGUAGE FlexibleContexts #-}
+
 module Lambda.Show(NamedTerm(..), DeBruijnTerm(..), AstTerm(..)) where
 
 import Control.Monad.Identity
@@ -67,6 +69,12 @@ showTerm showVar =
     tell $ showString "("
     showTerm' l
     tell $ showString " * "
+    showTerm' r
+    tell $ showString ")"
+  showTerm' (TermPow l r) = do
+    tell $ showString "("
+    showTerm' l
+    tell $ showString " ** "
     showTerm' r
     tell $ showString ")"
   showTerm' (TermApply tf tx) = do
